@@ -28,13 +28,14 @@
 //
 // =====================================================================
 
-import { useEffect, useState, useCallback, type RefObject } from "react";
+import { useEffect, useState, useCallback, useMemo, type RefObject } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wand2, X, SquareDashedMousePointer, Sparkles } from "lucide-react";
+import { Wand2, X, SquareDashedMousePointer, Sparkles, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 import { useForge } from "@/store/forge";
 import { MagneticButton } from "./magnetic-button";
 import { cn } from "@/lib/utils";
+import { SECTION_TEMPLATES, CATEGORY_LABELS, type SectionTemplate } from "@/lib/templates/section-templates";
 
 export interface SectionEditorOverlayProps {
   iframeRef: RefObject<HTMLIFrameElement | null>;
@@ -165,6 +166,9 @@ export function SectionEditorOverlay({
   const [editing, setEditing] = useState(false);
   const [editInstruction, setEditInstruction] = useState("");
   const [pending, setPending] = useState(false);
+  // Swap-for-template state
+  const [swapMode, setSwapMode] = useState(false);
+  const [swapCat, setSwapCat] = useState<string>("all");
 
   // Listen for postMessages from the iframe.
   useEffect(() => {
@@ -193,6 +197,50 @@ export function SectionEditorOverlay({
     await runForge(store, "iterate", instruction);
     setPending(false);
   }, [editInstruction, hoveredSection, store]);
+
+  /**
+   * Guess the template category from a section id (e.g. "features"
+   * → "features", "section-2" → "all" since we can't tell, "hero" →
+   * "hero"). Used by the Swap-for-template UI to pre-filter templates
+   * to the most likely match.
+   */
+  const guessedCategory = useMemo(() => {
+    if (!hoveredSection) return "all";
+    const id = hoveredSection.toLowerCase();
+    // Direct match: section id is "features", "hero", etc.
+    if (id in CATEGORY_LABELS) return id;
+    // Substring match: "hero-section" → "hero"
+    for (const cat of Object.keys(CATEGORY_LABELS)) {
+      if (id.includes(cat)) return cat;
+    }
+    return "all";
+  }, [hoveredSection]);
+
+  // Filter the templates by the active swap category.
+  const swapFiltered = useMemo(() => {
+    if (swapCat === "all") return SECTION_TEMPLATES;
+    return SECTION_TEMPLATES.filter((t) => t.category === swapCat);
+  }, [swapCat]);
+
+  const submitSwap = useCallback(
+    async (template: SectionTemplate) => {
+      if (!hoveredSection) return;
+      setPending(true);
+      setEditing(false);
+      setSwapMode(false);
+      const instruction = `Replace the section with id "${hoveredSection}" with a new section using this template: "${template.name}". ${template.useHint} Keep the rest of the page unchanged. Only the section with id "${hoveredSection}" should be replaced.`;
+      store.pushChatUser(`[${hoveredSection}] Swap for: ${template.name}`);
+      const { forge: runForge } = await import("./forge-studio");
+      await runForge(store, "iterate", instruction);
+      setPending(false);
+    },
+    [hoveredSection, store],
+  );
+
+  // When opening the edit modal, default the swap category to the guessed one.
+  useEffect(() => {
+    if (editing) setSwapCat(guessedCategory);
+  }, [editing, guessedCategory]);
 
   // No editor overlay when there's no preview or generation is active.
   if (!store.previewHtml) return null;
@@ -260,61 +308,152 @@ export function SectionEditorOverlay({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.2 }}
-              className="w-full max-w-md glass-panel rounded-4xl p-6"
+              className={cn(
+                "glass-panel rounded-4xl p-6 flex flex-col",
+                swapMode ? "w-full max-w-3xl max-h-[80vh]" : "w-full max-w-md",
+              )}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-gradient-lumina grid place-items-center text-white">
-                    <Wand2 className="w-4 h-4" />
+                    {swapMode ? <LayoutGrid className="w-4 h-4" /> : <Wand2 className="w-4 h-4" />}
                   </div>
                   <div>
-                    <h3 className="font-display font-bold text-base">Edit section</h3>
+                    <h3 className="font-display font-bold text-base">
+                      {swapMode ? "Swap section for template" : "Edit section"}
+                    </h3>
                     <p className="text-[11px] text-slate-500 font-mono">#{hoveredSection}</p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setEditing(false)}
+                  onClick={() => { setEditing(false); setSwapMode(false); }}
                   className="w-8 h-8 grid place-items-center rounded-full hover:bg-white/70 text-slate-500"
                   aria-label="Close"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed mb-3">
-                Whisper a change for this section. The Code Alchemist will
-                re-tune only this part — keep everything else intact.
-              </p>
-              <textarea
-                autoFocus
-                value={editInstruction}
-                onChange={(e) => setEditInstruction(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                    e.preventDefault();
-                    submitEdit();
-                  }
-                }}
-                placeholder="e.g. Make the headline larger and add a subtle parallax orb. Swap the color to sunset."
-                rows={4}
-                className="w-full resize-none rounded-2xl border border-slate-200 bg-white/70 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
-              />
-              <div className="flex justify-end gap-2 mt-3">
-                <button
-                  onClick={() => setEditing(false)}
-                  className="px-3 py-1.5 text-xs rounded-full hover:bg-white/70 text-slate-600"
-                >
-                  Cancel
-                </button>
-                <MagneticButton
-                  size="sm"
-                  onClick={submitEdit}
-                  disabled={!editInstruction.trim()}
-                >
-                  <Wand2 className="w-3.5 h-3.5" />
-                  Re-tune
-                </MagneticButton>
-              </div>
+
+              {swapMode ? (
+                <>
+                  <p className="text-xs text-slate-500 leading-relaxed mb-3">
+                    Pick a template to swap into this section. The Code
+                    Alchemist will replace <span className="font-mono">#{hoveredSection}</span>{" "}
+                    with the chosen block — everything else on the page stays intact.
+                  </p>
+
+                  {/* Category filter */}
+                  <div className="flex gap-1.5 overflow-x-auto lf-scroll pb-1 mb-3">
+                    <button
+                      onClick={() => setSwapCat("all")}
+                      className={cn(
+                        "px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors",
+                        swapCat === "all" ? "bg-gradient-lumina text-white" : "bg-white/70 text-slate-600 hover:bg-white",
+                      )}
+                    >
+                      All
+                    </button>
+                    {Object.keys(CATEGORY_LABELS).map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setSwapCat(cat)}
+                        className={cn(
+                          "px-3 py-1.5 text-xs rounded-full whitespace-nowrap transition-colors",
+                          swapCat === cat ? "bg-gradient-lumina text-white" : "bg-white/70 text-slate-600 hover:bg-white",
+                        )}
+                      >
+                        {CATEGORY_LABELS[cat]}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Templates list */}
+                  <div className="flex-1 overflow-y-auto lf-scroll grid sm:grid-cols-2 gap-2.5 mb-3">
+                    {swapFiltered.length === 0 ? (
+                      <p className="text-xs text-slate-400 text-center py-6 col-span-2">
+                        No templates in this category.
+                      </p>
+                    ) : (
+                      swapFiltered.map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => submitSwap(t)}
+                          className="text-left p-3 rounded-3xl border border-slate-200/60 bg-white/60 hover:border-violet-300 hover:-translate-y-0.5 transition-all"
+                        >
+                          <div className="flex items-start gap-2 mb-1.5">
+                            <div className="w-8 h-8 rounded-2xl bg-gradient-lumina grid place-items-center text-white text-base flex-shrink-0">
+                              {t.emoji}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-display font-bold text-sm truncate">{t.name}</h4>
+                              <p className="text-[9px] uppercase tracking-wider text-slate-400">
+                                {CATEGORY_LABELS[t.category] ?? t.category}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2 text-pretty">
+                            {t.description}
+                          </p>
+                        </button>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center gap-2 pt-2 border-t border-slate-200/60">
+                    <button
+                      onClick={() => setSwapMode(false)}
+                      className="px-3 py-1.5 text-xs rounded-full hover:bg-white/70 text-slate-600"
+                    >
+                      ← Back to whisper
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-slate-500 leading-relaxed mb-3">
+                    Whisper a change for this section. The Code Alchemist will
+                    re-tune only this part — keep everything else intact.
+                  </p>
+                  <textarea
+                    autoFocus
+                    value={editInstruction}
+                    onChange={(e) => setEditInstruction(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault();
+                        submitEdit();
+                      }
+                    }}
+                    placeholder="e.g. Make the headline larger and add a subtle parallax orb. Swap the color to sunset."
+                    rows={4}
+                    className="w-full resize-none rounded-2xl border border-slate-200 bg-white/70 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+                  />
+                  <div className="flex justify-end gap-2 mt-3">
+                    <button
+                      onClick={() => setSwapMode(true)}
+                      className="px-3 py-1.5 text-xs rounded-full bg-white/70 border border-slate-200 hover:border-violet-300 text-slate-700 inline-flex items-center gap-1.5"
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                      Swap for template
+                    </button>
+                    <button
+                      onClick={() => setEditing(false)}
+                      className="px-3 py-1.5 text-xs rounded-full hover:bg-white/70 text-slate-600"
+                    >
+                      Cancel
+                    </button>
+                    <MagneticButton
+                      size="sm"
+                      onClick={submitEdit}
+                      disabled={!editInstruction.trim()}
+                    >
+                      <Wand2 className="w-3.5 h-3.5" />
+                      Re-tune
+                    </MagneticButton>
+                  </div>
+                </>
+              )}
             </motion.div>
           </motion.div>
         )}

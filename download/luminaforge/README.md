@@ -109,6 +109,16 @@ bun run seed:demo
 
 This inserts an "Aurora — Open Source DB" project with complete generated HTML, scores, and history. Visit `/forges` to see it in your dashboard, then click it to open in the Forge Studio.
 
+### (Optional) Seed demo memories
+
+To see the Agent Memory Timeline page with sample content:
+
+```bash
+bun run seed:memories
+```
+
+This inserts 12 demo memories spread across the past week. Visit `/memory` to see the timeline visualization.
+
 ---
 
 ## ✺ What you get
@@ -156,6 +166,26 @@ A new **Memory** panel in `/settings` shows the colony's accumulated style prefe
 
 ### Voice Input (Composer + Iterate)
 Tap the microphone button next to the vibe description (or in the Iterate tab) to speak your prompt/tweak instead of typing. Uses the browser's built-in Web Speech API — no extra dependencies. Auto-hides on browsers that don't support speech recognition.
+
+### Agent Memory Timeline (`/memory`)
+A dedicated page that visualizes how the colony's understanding of your taste has evolved. Includes:
+- **Stats strip** — total memories, categories used, days active, auto-extracted count
+- **Latest insights** featured card with the 3 most recent memories
+- **By category** breakdown with animated progress bars
+- **Vertical timeline** — chronological, grouped by day, with category badges + source attribution (✶ harmony-keeper vs ✎ you) on each item
+- Search + category filter pills
+- Inline edit + delete on every memory
+
+### Per-section Templates (Swap from the section editor)
+When you toggle "Edit sections" in the preview and click a section, the Edit modal now has a **"Swap for template"** button next to "Re-tune". Click it to open a category-filtered template picker (pre-filtered to the section's likely category — e.g. clicking a "features" section pre-filters to Features templates). Click any template → the Code Alchemist replaces just that section with the template block, keeping everything else intact.
+
+### Built-in Video Demo Recorder
+A "Record" pill in the Forge top bar opens a premium modal that lets you record the Forge Studio using the browser's `getDisplayMedia` API + `MediaRecorder`. Features:
+- Optional microphone narration toggle (mic audio mixed with system audio)
+- Live elapsed timer while recording
+- Auto-downloads the .webm when you stop
+- Preview the recording inside the modal before discarding or downloading
+- Perfect for bootstrapping YouTube tutorials — record your Forge and ship a demo in one click
 
 ---
 

@@ -515,7 +515,15 @@ export function AgentMemoryPanel() {
           <Brain className="w-5 h-5" />
         </div>
         <div className="flex-1">
-          <h3 className="font-display font-bold text-lg mb-1">Agent Memory</h3>
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <h3 className="font-display font-bold text-lg">Agent Memory</h3>
+            <Link
+              href="/memory"
+              className="text-xs text-violet-600 hover:text-violet-700 font-medium inline-flex items-center gap-1"
+            >
+              View timeline →
+            </Link>
+          </div>
           <p className="text-sm text-slate-500 leading-relaxed">
             Style preferences the colony has learned about you. The Vibe
             Interpreter reads these as context on every fresh Forge, so

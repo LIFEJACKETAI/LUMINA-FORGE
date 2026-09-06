@@ -46,6 +46,7 @@ import { VoicePromptButton } from "./voice/voice-prompt-button";
 import { SectionEditorOverlay, injectEditorScript } from "./section-editor-overlay";
 import { TemplatesModal } from "./templates/templates-modal";
 import { LayoutGrid, GitFork } from "lucide-react";
+import { DemoRecorder } from "./recorder/demo-recorder";
 
 export function ForgeStudio() {
   const router = useRouter();
@@ -200,6 +201,7 @@ function ForgeTopBar() {
             <GitFork className="w-3.5 h-3.5" />
             Fork
           </button>
+          <DemoRecorder />
           <DeployToVercelButton />
           <UserMenu />
         </div>
