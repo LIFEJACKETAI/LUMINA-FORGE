@@ -1,0 +1,117 @@
+// =====================================================================
+// LuminaForge.ai — Prisma Schema (sandbox runtime)
+// =====================================================================
+// NOTE: In production we deploy to Supabase Postgres (see
+// `download/supabase-schema.sql` for the canonical SQL with RLS policies).
+// For local development + preview we mirror the same domain model into
+// Prisma + SQLite so the app is fully runnable with zero external setup.
+// =====================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// A user account. Mirrors the `profiles` table in Supabase (one row per auth user).
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects  Project[]
+  settings  Settings?
+}
+
+/// Encrypted credential store per user (OpenRouter key, HF token, etc.).
+/// Stored as opaque ciphertext in production; in this preview we keep
+/// values local-only and let the user paste them via the Settings page.
+model Settings {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  openRouterKey   String?
+  huggingFaceToken String?
+  supabaseUrl     String?
+  supabaseAnonKey String?
+  defaultModel    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// A Forge project — one per "site" the user is generating.
+model Project {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  // The latest committed HTML output (self-contained Tailwind-CDN document).
+  currentHtml String?
+  // The latest structured design spec JSON (from the Design Architect agent).
+  currentSpec String?
+  // The original vibe prompt + reference URL — used to seed the composer on reopen.
+  lastPrompt  String?
+  lastRefUrl  String?
+  // Quick vibe chips that were selected when the project was last forged.
+  vibeTags    String?
+  // Thumbnail URL (stored in Supabase Storage in production; data URL locally).
+  thumbnailUrl String?
+  // Lightweight SEO/performance scorecard updated by the Performance Guardian.
+  seoScore    Int?
+  perfScore   Int?
+  a11yScore   Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generations Generation[]
+  assets      Asset[]
+}
+
+/// One full agent run — preserves the entire history of iterations.
+model Generation {
+  id          String   @id @default(cuid())
+  projectId   String
+  // The user-facing prompt that triggered this generation.
+  prompt      String
+  referenceUrl String?
+  // Final HTML output for this round.
+  html        String
+  // The structured JSON design spec produced by the Design Architect.
+  spec        String?
+  // The full transcript of agent messages — JSON array of {agent, role, content, ts}.
+  transcript  String?
+  // Sequential version number within the project.
+  version     Int
+  // Score snapshot for this version.
+  seoScore    Int?
+  perfScore   Int?
+  a11yScore   Int?
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+/// Moodboard / sketch / reference images uploaded by the user.
+model Asset {
+  id          String   @id @default(cuid())
+  projectId   String
+  kind        String   // "moodboard" | "sketch" | "logo" | "hero"
+  // Public URL in Supabase Storage, or data URL in local preview.
+  url         String
+  fileName    String?
+  mimeType    String?
+  sizeBytes   Int?
+  // Optional caption/analysis produced by the vision agent (Minimax-M3).
+  analysis    String?
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}

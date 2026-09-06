@@ -1,0 +1,333 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ======================================================================
+   LuminaForge.ai — Design Tokens (Roundabout / Magical Aesthetic)
+   ======================================================================
+   The palette intentionally layers:
+   - Off-white "atelier" surfaces (#F8FAFC–#FFFFFF)
+   - Deep slate ink (#0F172A) for premium typography contrast
+   - Indigo #6366F1 → Violet #8B5CF6 → Cyan #22D3EE gradient as primary
+   - Soft glassmorphism + generous ultra-rounded forms (32–48px radii)
+   All radii/gradient/shadow tokens below are referenced across the app.
+   ====================================================================== */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  /* LuminaForge brand colors */
+  --color-lumina-indigo: #6366F1;
+  --color-lumina-violet: #8B5CF6;
+  --color-lumina-cyan: #22D3EE;
+  --color-lumina-ink: #0F172A;
+  --color-lumina-paper: #F8FAFC;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 10px);
+  --radius-3xl: 32px;
+  --radius-4xl: 48px;
+  --radius-5xl: 64px;
+}
+
+:root {
+  /* Ultra-rounded foundation */
+  --radius: 1.25rem;
+  --background: oklch(0.985 0.005 250);
+  --foreground: oklch(0.145 0.02 264);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0.02 264);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0.02 264);
+  --primary: oklch(0.55 0.18 280);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0.01 250);
+  --secondary-foreground: oklch(0.205 0.02 264);
+  --muted: oklch(0.97 0.005 250);
+  --muted-foreground: oklch(0.55 0.02 264);
+  --accent: oklch(0.94 0.03 250);
+  --accent-foreground: oklch(0.205 0.02 264);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.92 0.01 250);
+  --input: oklch(0.94 0.01 250);
+  --ring: oklch(0.55 0.18 280);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.55 0.18 280);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.13 0.02 264);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.18 0.02 264);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.18 0.02 264);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.65 0.2 280);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0.02 264);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0.02 264);
+  --muted-foreground: oklch(0.708 0 02 264);
+  --accent: oklch(0.269 0.02 264);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.55 0.18 280);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 02 264);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.55 0.18 280);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 02 264);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "cv01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* Smooth, buttery scrolling everywhere */
+  html {
+    scroll-behavior: smooth;
+  }
+  ::selection {
+    background: rgba(139, 92, 246, 0.25);
+    color: inherit;
+  }
+}
+
+/* ======================================================================
+   LUMINAFORGE — UTILITY LAYER
+   ====================================================================== */
+
+@layer utilities {
+  /* Brand gradient text */
+  .text-gradient-lumina {
+    background-image: linear-gradient(120deg, #6366F1 0%, #8B5CF6 45%, #22D3EE 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* Brand gradient backgrounds */
+  .bg-gradient-lumina {
+    background-image: linear-gradient(120deg, #6366F1 0%, #8B5CF6 45%, #22D3EE 100%);
+  }
+  .bg-gradient-lumina-soft {
+    background-image: linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(139,92,246,0.08) 50%, rgba(34,211,238,0.08) 100%);
+  }
+  /* Glassmorphism panel — used everywhere for the soft premium feel */
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.8) inset,
+      0 10px 40px -12px rgba(15, 23, 42, 0.10);
+  }
+  .dark .glass-panel {
+    background: rgba(20, 22, 34, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.05) inset,
+      0 12px 48px -12px rgba(0, 0, 0, 0.55);
+  }
+  /* Luminous orb glow — the signature soft shadow */
+  .glow-orb {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+      0 8px 32px -4px rgba(99, 102, 241, 0.35),
+      0 18px 64px -12px rgba(139, 92, 246, 0.30),
+      0 32px 96px -20px rgba(34, 211, 238, 0.22);
+  }
+  .glow-orb-sm {
+    box-shadow:
+      0 4px 16px -2px rgba(99, 102, 241, 0.28),
+      0 12px 32px -8px rgba(139, 92, 246, 0.22);
+  }
+  /* Floating animation */
+  .animate-float {
+    animation: lf-float 7s ease-in-out infinite;
+  }
+  .animate-float-slow {
+    animation: lf-float 11s ease-in-out infinite;
+  }
+  /* Orbit animation for agent rings */
+  .animate-orbit {
+    animation: lf-orbit 22s linear infinite;
+  }
+  .animate-orbit-reverse {
+    animation: lf-orbit-reverse 28s linear infinite;
+  }
+  /* Pulsing orb */
+  .animate-pulse-orb {
+    animation: lf-pulse-orb 3.5s ease-in-out infinite;
+  }
+  /* Shimmer gradient sweep */
+  .animate-shimmer {
+    background-size: 200% 100%;
+    animation: lf-shimmer 2.4s linear infinite;
+  }
+  /* Slow spin for halo rings */
+  .animate-spin-slow {
+    animation: lf-spin 30s linear infinite;
+  }
+  /* Conic halo (used for the central forge core) */
+  .halo-conic {
+    background: conic-gradient(from 0deg,
+      rgba(99,102,241,0.0) 0deg,
+      rgba(99,102,241,0.35) 60deg,
+      rgba(139,92,246,0.45) 140deg,
+      rgba(34,211,238,0.35) 220deg,
+      rgba(99,102,241,0.0) 360deg);
+    filter: blur(8px);
+  }
+  /* Premium scrollbar */
+  .lf-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+  .lf-scroll::-webkit-scrollbar-track { background: transparent; }
+  .lf-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(139,92,246,0.45), rgba(34,211,238,0.35));
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  .lf-scroll::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(139,92,246,0.7), rgba(34,211,238,0.55));
+    background-clip: padding-box;
+  }
+  /* Noise texture overlay for premium feel */
+  .noise-overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  /* Rounded utility — the signature soft forms */
+  .r-organic { border-radius: 36px; }
+  .r-soft { border-radius: 28px; }
+  .r-pill { border-radius: 9999px; }
+  /* Text balance for headlines */
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+}
+
+/* ======================================================================
+   LUMINAFORGE — KEYFRAMES
+   ====================================================================== */
+
+@keyframes lf-float {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  50% { transform: translateY(-14px) translateX(6px); }
+}
+
+@keyframes lf-orbit {
+  from { transform: rotate(0deg) translateX(var(--orbit-r, 120px)) rotate(0deg); }
+  to   { transform: rotate(360deg) translateX(var(--orbit-r, 120px)) rotate(-360deg); }
+}
+
+@keyframes lf-orbit-reverse {
+  from { transform: rotate(0deg) translateX(var(--orbit-r, 120px)) rotate(0deg); }
+  to   { transform: rotate(-360deg) translateX(var(--orbit-r, 120px)) rotate(360deg); }
+}
+
+@keyframes lf-pulse-orb {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 0 rgba(139, 92, 246, 0.4),
+      0 8px 32px -4px rgba(99, 102, 241, 0.4);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow:
+      0 0 0 16px rgba(139, 92, 246, 0),
+      0 12px 48px -4px rgba(99, 102, 241, 0.55);
+  }
+}
+
+@keyframes lf-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes lf-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes lf-rise {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-rise {
+  animation: lf-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Lenis smooth scroll setup */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
