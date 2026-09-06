@@ -31,7 +31,6 @@ import {
   Check,
   Settings,
   ArrowLeft,
-  Save,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useForge, VIBE_CHIPS } from "@/store/forge";
@@ -41,6 +40,10 @@ import { RoundaboutLoader } from "./roundabout-loader";
 import { Orb } from "./orb";
 import { cn } from "@/lib/utils";
 import { ForgeInspectorTabs } from "./forge-inspector";
+import { UserMenu } from "./auth/user-menu";
+import { DeployToVercelButton } from "./deploy/deploy-to-vercel";
+import { VoicePromptButton } from "./voice/voice-prompt-button";
+import { SectionEditorOverlay, injectEditorScript } from "./section-editor-overlay";
 
 export function ForgeStudio() {
   const router = useRouter();
@@ -166,16 +169,8 @@ function ForgeTopBar() {
             <Settings className="w-3.5 h-3.5" />
             Settings
           </Link>
-          <button
-            onClick={() => toast.info("Deploy to Vercel — coming soon. Use Export → Next.js ZIP for now.")}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full hover:bg-white/70 text-slate-700 transition-colors"
-          >
-            <Save className="w-3.5 h-3.5" />
-            Deploy
-          </button>
-          <div className="w-9 h-9 rounded-full bg-gradient-lumina grid place-items-center text-white text-sm font-bold">
-            LF
-          </div>
+          <DeployToVercelButton />
+          <UserMenu />
         </div>
       </div>
     </header>
@@ -221,9 +216,14 @@ function ForgeComposer() {
 
       {/* Vibe description */}
       <div>
-        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2 block">
-          Vibe Description
-        </label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Vibe Description
+          </label>
+          <VoicePromptButton
+            onTranscript={(t) => store.setPrompt(store.prompt ? `${store.prompt} ${t}`.trim() : t)}
+          />
+        </div>
         <textarea
           value={store.prompt}
           onChange={(e) => store.setPrompt(e.target.value)}
@@ -354,9 +354,12 @@ function ForgePreview() {
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
 
   // Recreate the iframe src whenever the preview HTML changes. We use
-  // a blob URL + a sandboxed iframe so the rendered site cannot touch
-  // the parent window's DOM. CSP is enforced inside the iframe's own
-  // <head> by the Code Alchemist.
+  // a sandboxed iframe so the rendered site cannot touch the parent
+  // window's DOM. When section-editing mode is on, we inject a small
+  // hover-overlay script before assigning to srcdoc (the
+  // <SectionEditorOverlay /> component owns the editorMode state and
+  // notifies this component via the setEditorMode callback).
+  const [editorMode, setEditorMode] = useState(false);
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -364,8 +367,10 @@ function ForgePreview() {
       iframe.srcdoc = "";
       return;
     }
-    iframe.srcdoc = store.previewHtml;
-  }, [store.previewHtml]);
+    iframe.srcdoc = editorMode
+      ? injectEditorScript(store.previewHtml)
+      : store.previewHtml;
+  }, [store.previewHtml, editorMode]);
 
   const showingLoader =
     store.phase === "running" || store.phase === "agent_active";
@@ -420,6 +425,14 @@ function ForgePreview() {
             aria-label="Live preview of generated website"
           />
         </div>
+
+        {/* Per-section editor overlay — receives postMessages from
+            the iframe to highlight + edit individual sections. */}
+        <SectionEditorOverlay
+          iframeRef={iframeRef}
+          editorMode={editorMode}
+          setEditorMode={setEditorMode}
+        />
 
         {/* Empty state */}
         {!store.previewHtml && !showingLoader && (
@@ -504,7 +517,7 @@ function ForgePreview() {
 // =====================================================================
 // FORGE — kick off a full agent run
 // =====================================================================
-async function forge(
+export async function forge(
   store: ReturnType<typeof useForge.getState>,
   mode: "fresh" | "iterate",
   instruction?: string,

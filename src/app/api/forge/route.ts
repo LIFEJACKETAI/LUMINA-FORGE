@@ -19,6 +19,7 @@ import { NextRequest } from "next/server";
 import { runForge, runIteration } from "@/lib/ai/orchestrator";
 import { AGENTS } from "@/lib/ai/agents";
 import { db } from "@/lib/db";
+import { getAuthenticatedUser } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";        // streaming + Buffer needs Node
 export const dynamic = "force-dynamic";
@@ -161,11 +162,14 @@ export async function POST(req: NextRequest) {
           // or create a new one. Always create a Generation row.
           try {
             const projectName = body.projectName || "Untitled Forge";
-            // Ensure the local user exists (sandbox single-user mode).
+            // Use the authenticated user when available, fall back to
+            // anonymous "local-user" for sandbox/preview mode.
+            const { anonymousId } = await getAuthenticatedUser();
+            const userId = anonymousId ?? "local-user";
             await db.user.upsert({
-              where: { id: "local-user" },
+              where: { id: userId },
               update: { email: "founder@luminaforge.local", name: "Lumina Founder" },
-              create: { id: "local-user", email: "founder@luminaforge.local", name: "Lumina Founder" },
+              create: { id: userId, email: "founder@luminaforge.local", name: "Lumina Founder" },
             });
             const existing = body.projectId
               ? await db.project.findUnique({ where: { id: body.projectId } })
@@ -187,7 +191,7 @@ export async function POST(req: NextRequest) {
                 })
               : await db.project.create({
                   data: {
-                    userId: "local-user", // single-user preview mode
+                    userId, // authenticated user, or "local-user" fallback
                     name: projectName,
                     currentHtml: finalHtml,
                     currentSpec: finalSpec,

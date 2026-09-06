@@ -11,6 +11,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Sparkles, Github } from "lucide-react";
 import { MagneticButton } from "./magnetic-button";
+import { UserMenu } from "./auth/user-menu";
 
 export function MarketingNav() {
   return (
@@ -66,6 +67,7 @@ export function MarketingNav() {
               Open the Forge
             </MagneticButton>
           </Link>
+          <UserMenu />
         </div>
       </div>
     </motion.header>

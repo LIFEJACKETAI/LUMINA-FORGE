@@ -1,19 +1,23 @@
 // =====================================================================
 // LuminaForge.ai — /api/projects
 // =====================================================================
-// GET    /api/projects              → list all (single-user preview mode)
+// GET    /api/projects              → list all (single-user preview mode
+//                                     or filtered by authed user)
 // POST   /api/projects              → create a new project
 // =====================================================================
 
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
+import { getAuthenticatedUser } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
+    const { anonymousId } = await getAuthenticatedUser();
     const projects = await db.project.findMany({
+      where: { userId: anonymousId ?? "local-user" },
       orderBy: { updatedAt: "desc" },
       take: 200,
     });
@@ -41,15 +45,16 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    // Ensure the local user exists (sandbox single-user mode).
+    const { anonymousId } = await getAuthenticatedUser();
+    // Ensure the user exists in the local Prisma DB.
     await db.user.upsert({
-      where: { id: "local-user" },
+      where: { id: anonymousId ?? "local-user" },
       update: { email: "founder@luminaforge.local", name: "Lumina Founder" },
-      create: { id: "local-user", email: "founder@luminaforge.local", name: "Lumina Founder" },
+      create: { id: anonymousId ?? "local-user", email: "founder@luminaforge.local", name: "Lumina Founder" },
     });
     const project = await db.project.create({
       data: {
-        userId: "local-user",
+        userId: anonymousId ?? "local-user",
         name: body.name ?? "Untitled Forge",
         description: body.description,
         lastPrompt: body.prompt,

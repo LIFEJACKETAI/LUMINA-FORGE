@@ -122,13 +122,25 @@ This inserts an "Aurora — Open Source DB" project with complete generated HTML
 
 ### Forge Studio (`/forge`) — the heart of the product
 Three-panel layout with a persistent top bar:
-- **Left — Composer:** vibe textarea, moodboard drag-and-drop, reference URL, quick vibe chips, prominent "Forge with Agents" button
-- **Center — Live Preview:** sandboxed iframe with a beautiful "Roundabout" overlay during generation (agent orbs orbit a glowing forge core with live status messages)
+- **Left — Composer:** vibe textarea (with **voice input** 🎤 via Web Speech API), moodboard drag-and-drop, reference URL, quick vibe chips, prominent "Forge with Agents" button
+- **Center — Live Preview:** sandboxed iframe with a beautiful "Roundabout" overlay during generation (agent orbs orbit a glowing forge core with live status messages). Includes **per-section editing** — toggle the "Edit sections" pill in the top-left to highlight + click any section and ask the colony to re-tune just that section.
 - **Right — Inspector tabs:**
   - **Agents** — live streaming transcripts of every agent
   - **Iterate** — natural-language chat that re-tunes the preview in place
   - **Code** — view the generated HTML / converted Next.js `page.tsx` + Copy / Download HTML ZIP / Export full Next.js project ZIP
   - **History** — previous generations for this project with score pills
+
+### Auth (`/auth/login`)
+- **Magic-link sign-in** via Supabase Auth
+- Send a one-time link to the user's email; clicking it lands them on `/forge`
+- Falls back gracefully to anonymous preview mode when Supabase isn't configured
+- User menu in the top-right shows avatar dropdown with email + sign-out
+
+### Deploy to Vercel
+- Click the **Deploy** pill in the Forge top bar
+- Uses the [Vercel REST API](https://vercel.com/docs/rest-api) to create a project and deploy the generated HTML as a static site
+- Premium modal shows live progress through 4 phases (preparing → creating → uploading → deploying) and the final live URL
+- Falls back gracefully with a helpful error message when `VERCEL_TOKEN` isn't set
 
 ### Settings page (`/settings`)
 Premium key-management UI. OpenRouter, Hugging Face, and Supabase credentials with show/hide toggles, status indicators, and direct links to the free key signup pages.

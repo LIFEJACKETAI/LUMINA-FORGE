@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Toaster as UiToaster } from "@/components/ui/toaster";
 import { SmoothScrollProvider } from "@/components/lumina/smooth-scroll";
+import { AuthProvider } from "@/components/lumina/auth/auth-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -64,7 +65,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} antialiased bg-background text-foreground`}
       >
-        <SmoothScrollProvider>{children}</SmoothScrollProvider>
+        <AuthProvider>
+          <SmoothScrollProvider>{children}</SmoothScrollProvider>
+        </AuthProvider>
         <UiToaster />
         <Toaster richColors position="top-center" />
       </body>
