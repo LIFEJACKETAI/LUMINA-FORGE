@@ -127,8 +127,10 @@ function FloatingForgeEmblem() {
       {[0, 1, 2, 3, 4].map((i) => {
         const angle = (i / 5) * 2 * Math.PI;
         const r = 200;
-        const x = Math.cos(angle) * r;
-        const y = Math.sin(angle) * r;
+        // Round to 1 decimal to avoid SSR/client hydration mismatches from
+        // floating-point precision differences.
+        const x = Math.round(Math.cos(angle) * r * 10) / 10;
+        const y = Math.round(Math.sin(angle) * r * 10) / 10;
         const labels = ["✶", "◆", "✦", "▲", "✺"];
         return (
           <motion.div

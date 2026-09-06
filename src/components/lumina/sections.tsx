@@ -266,17 +266,16 @@ export function ExamplesSection() {
             <Link
               key={i}
               href={`/forge?prompt=${encodeURIComponent(ex.prompt)}`}
-              passHref
+              className="block group relative overflow-hidden glass-panel rounded-4xl h-56 cursor-pointer hover:-translate-y-1.5 transition-transform duration-300"
             >
-              <motion.a
+              <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-60px" }}
                 transition={{ duration: 0.6, delay: i * 0.08, ease: EASE }}
-                whileHover={{ y: -6 }}
-                className="block group relative overflow-hidden glass-panel rounded-4xl h-56 cursor-pointer"
+                className="relative h-full"
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${ex.color} opacity-20 group-hover:opacity-35 transition-opacity duration-500`} />
+                <div className={`absolute inset-0 bg-gradient-to-br ${ex.color} opacity-20 group-hover:opacity-35 transition-opacity duration-500 rounded-4xl`} />
                 <Orb size="md" color="#8B5CF6" halo="#22D3EE" className="-bottom-20 -right-16 opacity-40 group-hover:opacity-60 transition-opacity" static />
                 <div className="relative p-6 flex flex-col h-full">
                   <div className="text-3xl mb-3">{ex.emoji}</div>
@@ -288,7 +287,7 @@ export function ExamplesSection() {
                     <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                   </div>
                 </div>
-              </motion.a>
+              </motion.div>
             </Link>
           ))}
         </div>

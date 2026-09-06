@@ -47,11 +47,40 @@ export function ForgeStudio() {
   const params = useSearchParams();
   const store = useForge();
 
-  // Read ?prompt= from URL (used by the gallery cards).
+  // Read ?prompt= OR ?projectId= from URL.
+  //   ?prompt=...     : used by the gallery cards — pre-fills the composer
+  //   ?projectId=...  : used by My Forges — loads an existing project's
+  //                    saved HTML, prompt, vibe tags, and history into the
+  //                    studio so the user can keep iterating.
   useEffect(() => {
+    const projectId = params.get("projectId");
     const p = params.get("prompt");
-    if (p && !store.prompt) store.setPrompt(p);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (projectId && !store.projectId) {
+      (async () => {
+        try {
+          const res = await fetch(`/api/projects/${projectId}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          const project = data.project;
+          if (!project) return;
+          store.loadFromProject({
+            id: project.id,
+            name: project.name,
+            currentHtml: project.currentHtml ?? "",
+            currentSpec: typeof project.currentSpec === "string" ? project.currentSpec : JSON.stringify(project.currentSpec ?? {}),
+            lastPrompt: project.lastPrompt ?? "",
+            lastRefUrl: project.lastRefUrl ?? "",
+            vibeTags: project.vibeTags ?? [],
+            scores: project.scores ?? null,
+            versions: data.versions ?? [],
+          });
+        } catch {
+          /* silent — the studio still works as a fresh session */
+        }
+      })();
+    } else if (p && !store.prompt) {
+      store.setPrompt(p);
+    }
   }, [params]);
 
   return (
@@ -279,7 +308,6 @@ function ForgeComposer() {
           <div className="mt-3 grid grid-cols-3 gap-2">
             {store.uploadedImages.map((img) => (
               <div key={img.url} className="relative group aspect-square rounded-xl overflow-hidden bg-slate-100">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
                 <button
                   onClick={() => store.removeImage(img.url)}
@@ -438,6 +466,36 @@ function ForgePreview() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Error state — always visible when phase==="error" and no preview yet */}
+        <AnimatePresence>
+          {store.phase === "error" && store.error && !store.previewHtml && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 grid place-items-center p-8 bg-gradient-lumina-soft"
+            >
+              <div className="max-w-md text-center space-y-4">
+                <div className="w-16 h-16 mx-auto rounded-full bg-rose-100 grid place-items-center text-rose-500 text-2xl">
+                  ⚠
+                </div>
+                <h3 className="font-display font-bold text-xl text-slate-800">
+                  The colony needs a key
+                </h3>
+                <p className="text-sm text-slate-600 leading-relaxed text-pretty">
+                  {store.error}
+                </p>
+                <Link href="/settings">
+                  <MagneticButton size="sm">
+                    <Settings className="w-4 h-4" />
+                    Add your free OpenRouter key
+                  </MagneticButton>
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </section>
   );
@@ -483,8 +541,16 @@ async function forge(
     });
 
     if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      throw new Error(`Forge failed (${res.status}): ${errText.slice(0, 200)}`);
+      // The API returns JSON (with an `error` field) on non-stream errors.
+      let errMsg = `Forge failed (${res.status})`;
+      try {
+        const errJson = await res.json();
+        if (errJson?.error) errMsg = errJson.error;
+      } catch {
+        const errText = await res.text().catch(() => "");
+        if (errText) errMsg = `Forge failed (${res.status}): ${errText.slice(0, 200)}`;
+      }
+      throw new Error(errMsg);
     }
     if (!res.body) throw new Error("No response stream");
 

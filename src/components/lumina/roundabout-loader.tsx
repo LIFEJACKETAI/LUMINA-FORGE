@@ -108,8 +108,9 @@ export function RoundaboutLoader({
         {AGENT_ORDER.map((agentId, i) => {
           const agent = AGENTS[agentId];
           const angle = (i / AGENT_ORDER.length) * 2 * Math.PI - Math.PI / 2;
-          const x = Math.cos(angle) * radius;
-          const y = Math.sin(angle) * radius;
+          // Round to 1 decimal to avoid SSR/client hydration mismatches.
+          const x = Math.round(Math.cos(angle) * radius * 10) / 10;
+          const y = Math.round(Math.sin(angle) * radius * 10) / 10;
           const isActive = activeAgentId === agentId;
 
           return (
