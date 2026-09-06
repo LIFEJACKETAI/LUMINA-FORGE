@@ -140,6 +140,22 @@ export async function POST(req: NextRequest) {
           let finalSpec = "";
           let scores: { seo: number; perf: number; a11y: number } | null = null;
           let review = "";
+          const collectedMemories: { content: string; category: string }[] = [];
+
+          // Fetch the user's accumulated style memories and inject them
+          // into the Vibe Interpreter's context.
+          const { anonymousId: memUserId } = await getAuthenticatedUser();
+          let existingMemories: { content: string; category?: string | null }[] = [];
+          try {
+            existingMemories = await db.agentMemory.findMany({
+              where: { userId: memUserId ?? "local-user" },
+              orderBy: { updatedAt: "desc" },
+              take: 30,
+              select: { content: true, category: true },
+            });
+          } catch {
+            /* memory fetch failure is non-fatal */
+          }
 
           for await (const event of runForge({
             apiKey,
@@ -148,6 +164,7 @@ export async function POST(req: NextRequest) {
             imageUrls: body.imageUrls,
             hfToken: process.env.HF_TOKEN,
             previousHtml: body.previousHtml,
+            memories: existingMemories,
           })) {
             send(event);
             if (event.type === "html") finalHtml = event.html;
@@ -155,6 +172,26 @@ export async function POST(req: NextRequest) {
             if (event.type === "scores") {
               scores = { seo: event.seo, perf: event.perf, a11y: event.a11y };
               review = event.review ?? "";
+            }
+            if (event.type === "memory") {
+              collectedMemories.push({ content: event.content, category: event.category });
+            }
+          }
+
+          // Persist any new memories the Harmony Keeper surfaced.
+          if (collectedMemories.length > 0) {
+            try {
+              await db.agentMemory.createMany({
+                data: collectedMemories.map((m) => ({
+                  userId: memUserId ?? "local-user",
+                  content: m.content,
+                  category: m.category,
+                  source: "harmony-keeper",
+                })),
+                skipDuplicates: true,
+              });
+            } catch (err) {
+              console.error("[forge] memory persist failed:", err);
             }
           }
 

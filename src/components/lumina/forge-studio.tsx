@@ -44,6 +44,8 @@ import { UserMenu } from "./auth/user-menu";
 import { DeployToVercelButton } from "./deploy/deploy-to-vercel";
 import { VoicePromptButton } from "./voice/voice-prompt-button";
 import { SectionEditorOverlay, injectEditorScript } from "./section-editor-overlay";
+import { TemplatesModal } from "./templates/templates-modal";
+import { LayoutGrid, GitFork } from "lucide-react";
 
 export function ForgeStudio() {
   const router = useRouter();
@@ -117,7 +119,27 @@ export function ForgeStudio() {
 // =====================================================================
 function ForgeTopBar() {
   const store = useForge();
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
+
+  async function forkCurrent() {
+    if (!store.projectId) {
+      toast.info("Forge a site first — then you can fork this vibe.");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/projects/${store.projectId}/fork`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? `Fork failed (${res.status})`);
+      }
+      const data = await res.json();
+      toast.success("Forked — opening the new Forge…");
+      router.push(`/forge?projectId=${data.project.id}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Fork failed");
+    }
+  }
 
   return (
     <header className="fixed top-3 left-1/2 -translate-x-1/2 z-40 w-[min(1400px,calc(100%-1.5rem))]">
@@ -169,6 +191,15 @@ function ForgeTopBar() {
             <Settings className="w-3.5 h-3.5" />
             Settings
           </Link>
+          <button
+            onClick={forkCurrent}
+            disabled={!store.projectId}
+            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full hover:bg-white/70 text-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title={store.projectId ? "Fork this vibe" : "Forge a site first"}
+          >
+            <GitFork className="w-3.5 h-3.5" />
+            Fork
+          </button>
           <DeployToVercelButton />
           <UserMenu />
         </div>
@@ -232,6 +263,11 @@ function ForgeComposer() {
           className="w-full resize-none rounded-2xl border border-slate-200 bg-white/70 p-3.5 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-violet-300 transition-all"
         />
       </div>
+
+      {/* Templates launcher — opens the modal that lets the user
+          browse pre-built section blocks and inject their useHint
+          into the prompt. */}
+      <TemplatesLauncher />
 
       {/* Quick vibe chips */}
       <div>
@@ -342,6 +378,25 @@ function ForgeComposer() {
         )}
       </div>
     </aside>
+  );
+}
+
+// =====================================================================
+// TEMPLATES LAUNCHER — pill button that opens the Templates modal
+// =====================================================================
+function TemplatesLauncher() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-medium rounded-full bg-white/70 border border-slate-200 hover:border-violet-300 hover:bg-white text-slate-700 transition-colors"
+      >
+        <LayoutGrid className="w-3.5 h-3.5" />
+        Browse section templates
+      </button>
+      <TemplatesModal open={open} onClose={() => setOpen(false)} />
+    </>
   );
 }
 

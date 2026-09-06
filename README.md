@@ -146,7 +146,16 @@ Three-panel layout with a persistent top bar:
 Premium key-management UI. OpenRouter, Hugging Face, and Supabase credentials with show/hide toggles, status indicators, and direct links to the free key signup pages.
 
 ### My Forges (`/forges`)
-Searchable grid of all your past projects. Each card has a tiny sandboxed iframe thumbnail rendered from the saved HTML, plus score pills and a one-click "Open in Studio" link to keep iterating.
+Searchable grid of all your past projects. Each card has a tiny sandboxed iframe thumbnail rendered from the saved HTML, plus score pills, a one-click "Open in Studio" link to keep iterating, and a **Fork** button (the GitFork icon) to clone any vibe as a new project.
+
+### Section Templates
+Click **"Browse section templates"** in the Composer to open a premium modal with 10+ pre-built blocks (Centered Orb Hero, Split Orb Hero, 3-Card Features, Stat Strip, Single Pricing Card, 3-Tier Pricing, FAQ Accordion, 3-Card Testimonials, Gradient CTA Panel, 3-Image Gallery, Rounded Footer Panel) — each follows the "Roundabout" aesthetic and includes a live iframe preview. Double-click any template (or use the "Insert into prompt" button) to inject a "use template X" instruction into the vibe textarea.
+
+### Agent Memory
+A new **Memory** panel in `/settings` shows the colony's accumulated style preferences. The Vibe Interpreter reads these as context on every fresh Forge, so LuminaForge remembers your taste across projects. The Harmony Keeper automatically surfaces new memories after each Forge — you can also manually add, edit, or delete memories in the panel.
+
+### Voice Input (Composer + Iterate)
+Tap the microphone button next to the vibe description (or in the Iterate tab) to speak your prompt/tweak instead of typing. Uses the browser's built-in Web Speech API — no extra dependencies. Auto-hides on browsers that don't support speech recognition.
 
 ---
 

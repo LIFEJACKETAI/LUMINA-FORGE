@@ -20,8 +20,10 @@ import {
   Sparkles,
   Wand2,
   Clock,
+  GitFork,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 import { MarketingNav, MarketingFooter } from "./marketing-shell";
 import { Orb, GradientText, GlowCard } from "./orb";
 import { MagneticButton } from "./magnetic-button";
@@ -44,6 +46,7 @@ interface ProjectDetail extends ProjectListItem {
 }
 
 export function MyForges() {
+  const router = useRouter();
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -102,6 +105,22 @@ export function MyForges() {
       toast.success("Forge deleted");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Delete failed");
+    }
+  }
+
+  async function forkProject(id: string, name: string) {
+    try {
+      const res = await fetch(`/api/projects/${id}/fork`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? `Fork failed (${res.status})`);
+      }
+      const data = await res.json();
+      toast.success(`Forked "${name}" — opening the new Forge…`);
+      // Navigate to the new project's Forge Studio.
+      router.push(`/forge?projectId=${data.project.id}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Fork failed");
     }
   }
 
@@ -220,6 +239,16 @@ export function MyForges() {
                           aria-label="Delete Forge"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Fork button — clone this Forge as a new project */}
+                        <button
+                          onClick={() => forkProject(project.id, project.name)}
+                          className="absolute top-2 right-11 w-7 h-7 grid place-items-center rounded-full bg-black/30 text-white hover:bg-violet-500 transition-colors"
+                          aria-label="Fork this Forge"
+                          title="Fork this vibe"
+                        >
+                          <GitFork className="w-3.5 h-3.5" />
                         </button>
                       </div>
 

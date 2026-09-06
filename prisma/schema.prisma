@@ -115,3 +115,28 @@ model Asset {
 
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
+
+/// Agent Memory — a small per-user store of style preferences that the
+/// colony accumulates over multiple forges. The Vibe Interpreter reads
+/// these as context for every new forge, so LuminaForge remembers your
+/// taste across projects.
+///
+/// Each row is a single short sentence like "User prefers bold display
+/// typography" or "User dislikes cluttered hero sections". The
+/// Harmony Keeper can emit new memories after each Forge; the user can
+/// also edit/delete them from /settings → Memory.
+model AgentMemory {
+  id        String   @id @default(cuid())
+  userId    String
+  // The memory itself, e.g. "Prefers ultra-rounded 48px radii"
+  content   String
+  // Optional category for grouping in the UI.
+  category  String?  // "color" | "typography" | "layout" | "tone" | "misc"
+  // Which agent or user originated this memory.
+  source    String   // "harmony-keeper" | "user" | "vibe-interpreter"
+  // Optional weight (0..1) used by the Vibe Interpreter when ranking
+  // which memories to surface in the prompt. Defaults to 1.
+  weight    Float    @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

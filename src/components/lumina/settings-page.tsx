@@ -14,9 +14,9 @@
 // pgcrypto — see `download/luminaforge/supabase-schema.sql`.
 // =====================================================================
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   Key,
@@ -29,6 +29,10 @@ import {
   Shield,
   Sparkles,
   Zap,
+  Brain,
+  Plus,
+  Trash2,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { MarketingNav, MarketingFooter } from "./marketing-shell";
@@ -180,6 +184,9 @@ export function SettingsPage() {
               {saved ? "Saved" : "Save keys"}
             </MagneticButton>
           </motion.div>
+
+          {/* Agent Memory */}
+          <AgentMemoryPanel />
 
           {/* Educational note */}
           <GlowCard className="!p-6">
@@ -398,5 +405,235 @@ function Field({
         )}
       />
     </div>
+  );
+}
+
+// =====================================================================
+// <AgentMemoryPanel /> — the "Memory" section in /settings
+// =====================================================================
+// Surfaces the colony's accumulated style preferences for this user.
+// The user can:
+//   • Manually add a new memory
+//   • Edit any memory in-place
+//   • Delete a memory
+//   • See which agent originated each memory (badge)
+// On every fresh Forge, the Vibe Interpreter reads these as context so
+// LuminaForge remembers the user's taste across projects.
+// =====================================================================
+
+interface Memory {
+  id: string;
+  content: string;
+  category: string | null;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  color: "bg-pink-100 text-pink-700",
+  typography: "bg-indigo-100 text-indigo-700",
+  layout: "bg-cyan-100 text-cyan-700",
+  tone: "bg-amber-100 text-amber-700",
+  content: "bg-emerald-100 text-emerald-700",
+  misc: "bg-slate-100 text-slate-700",
+};
+
+export function AgentMemoryPanel() {
+  const [memories, setMemories] = useState<Memory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newContent, setNewContent] = useState("");
+  const [newCategory, setNewCategory] = useState("misc");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/memory");
+      if (!res.ok) return;
+      const data = await res.json();
+      setMemories(data.memories ?? []);
+    } catch {
+      /* silent — memory is a nice-to-have */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function addMemory() {
+    if (!newContent.trim()) return;
+    try {
+      const res = await fetch("/api/memory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: newContent.trim(), category: newCategory, source: "user" }),
+      });
+      if (!res.ok) throw new Error("Failed to add memory");
+      setNewContent("");
+      toast.success("Memory saved. The colony will honor it next Forge.");
+      load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to add memory");
+    }
+  }
+
+  async function deleteMemory(id: string) {
+    try {
+      const res = await fetch(`/api/memory/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+      setMemories((m) => m.filter((x) => x.id !== id));
+      toast.success("Memory removed.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete");
+    }
+  }
+
+  async function saveEdit(id: string) {
+    if (!editContent.trim()) return;
+    try {
+      const res = await fetch(`/api/memory/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: editContent.trim() }),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      setEditingId(null);
+      setEditContent("");
+      toast.success("Memory updated.");
+      load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update");
+    }
+  }
+
+  return (
+    <GlowCard className="!p-6">
+      <div className="flex items-start gap-4 mb-5">
+        <div className="w-12 h-12 rounded-2xl grid place-items-center bg-gradient-to-br from-violet-400 to-fuchsia-500 text-white shadow-orb-sm flex-shrink-0">
+          <Brain className="w-5 h-5" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-display font-bold text-lg mb-1">Agent Memory</h3>
+          <p className="text-sm text-slate-500 leading-relaxed">
+            Style preferences the colony has learned about you. The Vibe
+            Interpreter reads these as context on every fresh Forge, so
+            LuminaForge remembers your taste across projects. The Harmony
+            Keeper surfaces new memories automatically after each Forge.
+          </p>
+        </div>
+      </div>
+
+      {/* Add a new memory */}
+      <div className="flex flex-col sm:flex-row gap-2 mb-5">
+        <select
+          value={newCategory}
+          onChange={(e) => setNewCategory(e.target.value)}
+          className="rounded-2xl border border-slate-200 bg-white/70 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+          aria-label="Category"
+        >
+          {["misc", "color", "typography", "layout", "tone", "content"].map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        <input
+          value={newContent}
+          onChange={(e) => setNewContent(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addMemory()}
+          placeholder="e.g. Always use ultra-rounded 48px radii on cards"
+          maxLength={200}
+          className="flex-1 rounded-2xl border border-slate-200 bg-white/70 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+        />
+        <MagneticButton size="sm" onClick={addMemory} disabled={!newContent.trim()}>
+          <Plus className="w-4 h-4" />
+          Add
+        </MagneticButton>
+      </div>
+
+      {/* Memories list */}
+      {loading ? (
+        <div className="text-sm text-slate-400 text-center py-6">Loading memories…</div>
+      ) : memories.length === 0 ? (
+        <div className="text-sm text-slate-400 text-center py-6 leading-relaxed">
+          No memories yet. Forge your first site and the Harmony Keeper will
+          start collecting preferences, or add one manually above.
+        </div>
+      ) : (
+        <ul className="space-y-2 max-h-80 overflow-y-auto lf-scroll">
+          <AnimatePresence initial={false}>
+            {memories.map((m) => (
+              <motion.li
+                key={m.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+                className="group flex items-start gap-3 p-3 rounded-2xl bg-white/60 border border-slate-200/60 hover:border-violet-200 transition-colors"
+              >
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wide flex-shrink-0 ${
+                    CATEGORY_COLORS[m.category ?? "misc"] ?? CATEGORY_COLORS.misc
+                  }`}
+                >
+                  {m.category ?? "misc"}
+                </span>
+                {editingId === m.id ? (
+                  <div className="flex-1 flex gap-2">
+                    <input
+                      autoFocus
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && saveEdit(m.id)}
+                      className="flex-1 rounded-xl border border-violet-200 bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+                    />
+                    <button
+                      onClick={() => saveEdit(m.id)}
+                      className="px-2.5 py-1 text-xs rounded-full bg-violet-600 text-white hover:bg-violet-700"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => { setEditingId(null); setEditContent(""); }}
+                      className="px-2.5 py-1 text-xs rounded-full hover:bg-slate-100 text-slate-600"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="flex-1 text-sm text-slate-700 leading-relaxed">{m.content}</p>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => {
+                          setEditingId(m.id);
+                          setEditContent(m.content);
+                        }}
+                        className="w-7 h-7 grid place-items-center rounded-full hover:bg-white text-slate-500"
+                        aria-label="Edit"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => deleteMemory(m.id)}
+                        className="w-7 h-7 grid place-items-center rounded-full hover:bg-rose-50 text-rose-500"
+                        aria-label="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    {m.source === "harmony-keeper" && (
+                      <span className="text-[9px] font-mono text-violet-600 flex-shrink-0">
+                        ✶ keeper
+                      </span>
+                    )}
+                  </>
+                )}
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        </ul>
+      )}
+    </GlowCard>
   );
 }

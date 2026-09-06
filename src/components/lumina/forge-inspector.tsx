@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { useForge } from "@/store/forge";
 import { AGENT_ORDER, AGENTS, type AgentId } from "@/lib/ai/agents";
 import { MagneticButton } from "./magnetic-button";
+import { VoicePromptButton } from "./voice/voice-prompt-button";
 import { cn } from "@/lib/utils";
 
 type Tab = "agents" | "iterate" | "code" | "history";
@@ -292,28 +293,38 @@ function IterateTab() {
             )}
           </div>
 
-          <div className="border-t border-slate-200/60 pt-3 flex gap-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                  e.preventDefault();
-                  send();
-                }
-              }}
-              placeholder="Ask for a change…"
-              rows={2}
-              className="flex-1 resize-none rounded-2xl border border-slate-200 bg-white/70 p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-violet-300"
-            />
-            <button
-              onClick={send}
-              disabled={!input.trim() || store.phase === "agent_active" || store.phase === "running"}
-              className="w-10 grid place-items-center rounded-full bg-gradient-lumina text-white disabled:opacity-40"
-              aria-label="Send"
-            >
+          <div className="border-t border-slate-200/60 pt-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                Whisper a tweak
+              </span>
+              <VoicePromptButton
+                onTranscript={(t) => setInput((prev) => (prev ? `${prev} ${t}`.trim() : t))}
+              />
+            </div>
+            <div className="flex gap-2">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
+                placeholder="Ask for a change… (or tap the mic and speak)"
+                rows={2}
+                className="flex-1 resize-none rounded-2xl border border-slate-200 bg-white/70 p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-violet-300"
+              />
+              <button
+                onClick={send}
+                disabled={!input.trim() || store.phase === "agent_active" || store.phase === "running"}
+                className="w-10 grid place-items-center rounded-full bg-gradient-lumina text-white disabled:opacity-40"
+                aria-label="Send"
+              >
               <Send className="w-4 h-4" />
-            </button>
+              </button>
+            </div>
           </div>
         </>
       )}

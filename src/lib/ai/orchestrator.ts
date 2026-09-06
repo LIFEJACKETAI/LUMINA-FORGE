@@ -21,6 +21,10 @@ export interface ForgeInput {
   hfToken?: string;
   /** Optional previous HTML — when iterating on an existing project. */
   previousHtml?: string;
+  /** Agent memories the colony has accumulated about this user's taste.
+   *  Injected as context into the Vibe Interpreter so LuminaForge
+   *  remembers preferences across forges. */
+  memories?: { content: string; category?: string | null }[];
 }
 
 /** Discriminated union of events the orchestrator emits. */
@@ -32,6 +36,7 @@ export type ForgeEvent =
   | { type: "html"; html: string }
   | { type: "spec"; spec: string }
   | { type: "vibe"; vibe: string }
+  | { type: "memory"; content: string; category: string }
   | { type: "error"; agentId?: AgentId; message: string }
   | { type: "done" };
 
@@ -133,6 +138,13 @@ export async function* runForge(
   // ---- 1. Vibe Interpreter ----
   yield { type: "agent_start", agentId: "vibe-interpreter", statusMessage: AGENTS["vibe-interpreter"].statusMessage };
   let vibeFull = "";
+  // Build the memory context block — injected so the colony remembers
+  // the user's taste across forges.
+  const memoryBlock =
+    input.memories && input.memories.length > 0
+      ? `\n\nAGENT MEMORY (the user's accumulated style preferences — honor these where possible):
+${input.memories.slice(0, 30).map((m, i) => `${i + 1}. [${m.category ?? "misc"}] ${m.content}`).join("\n")}`
+      : "";
   try {
     for await (const delta of callAgent("vibe-interpreter", [
       { role: "system", content: SYSTEM_PROMPTS["vibe-interpreter"] },
@@ -141,7 +153,7 @@ export async function* runForge(
         content: `User prompt: ${input.prompt}
 Reference URL: ${input.referenceUrl ?? "(none)"}
 Uploaded images: ${input.imageUrls?.length ? input.imageUrls.join(", ") : "(none)"}
-${input.previousHtml ? "Iterating on an existing project — previous HTML will be sent after this round." : ""}`,
+${input.previousHtml ? "Iterating on an existing project — previous HTML will be sent after this round." : ""}${memoryBlock}`,
       },
     ])) {
       vibeFull += delta;
@@ -267,6 +279,62 @@ ${input.previousHtml ? "Iterating on an existing project — previous HTML will 
       html = finalHtml;
     }
     yield { type: "agent_done", agentId: "harmony-keeper", full: harmonyFull };
+
+    // ---- 5b. Memory extraction ----
+    // After the final review, ask the Harmony Keeper to surface 1-3
+    // short style-preference memories based on this Forge. These will
+    // be persisted by the API route and injected into the next Forge.
+    // We only do this on fresh forges (not iterates) to avoid drift.
+    if (!input.previousHtml) {
+      try {
+        let memoryFull = "";
+        for await (const delta of streamChat({
+          apiKey: input.apiKey,
+          model: AGENTS["harmony-keeper"].model,
+          messages: [
+            {
+              role: "system",
+              content: `You are the Harmony Keeper. Based on the just-finished Forge, surface 1-3 short style-preference memories about the user that should be remembered across future forges.
+
+Examples of good memories:
+- "Prefers ultra-rounded organic forms with 48px radii"
+- "Likes indigo-violet-cyan gradient accents"
+- "Dislikes cluttered hero sections"
+- "Prefers Inter body + Space Grotesk headings"
+
+Return ONLY a JSON array of objects with {content, category}. Categories: "color" | "typography" | "layout" | "tone" | "content" | "misc". Max 3 items. No markdown fences, no commentary.`,
+            },
+            {
+              role: "user",
+              content: `User prompt: ${input.prompt}\n\nFinal HTML (truncated to first 4000 chars):\n${html.slice(0, 4000)}`,
+            },
+          ],
+          temperature: 0.4,
+          maxTokens: 600,
+        })) {
+          memoryFull += delta;
+        }
+        const memoryJson = extractJson(memoryFull);
+        try {
+          const parsed = JSON.parse(memoryJson);
+          if (Array.isArray(parsed)) {
+            for (const m of parsed.slice(0, 3)) {
+              if (m && typeof m.content === "string" && m.content.length < 200) {
+                yield {
+                  type: "memory",
+                  content: m.content,
+                  category: typeof m.category === "string" ? m.category : "misc",
+                };
+              }
+            }
+          }
+        } catch {
+          // Malformed JSON — silently skip. Memories are nice-to-have.
+        }
+      } catch {
+        // Memory extraction failure should never break the Forge.
+      }
+    }
   } catch (err) {
     yield {
       type: "error",
