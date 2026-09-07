@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: false,
   turbopack: {
-    root: ".",
+    root: "/home/c-jay69/Documents/GitHub/LUMINA-FORGE",
   },
 };
 
